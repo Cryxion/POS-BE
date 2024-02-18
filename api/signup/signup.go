@@ -6,18 +6,13 @@ import (
 	"net/http"
 	"pos-be/.gen/YAPOS/public/model"
 	. "pos-be/.gen/YAPOS/public/table"
+
 	db "pos-be/database"
 	authentication "pos-be/lib"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
-
-// Define a map to store users (in memory for simplicity)
-var users = map[string]string{
-	"user1": "password1",
-	"user2": "password2",
-}
 
 // Handler for user registration
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +22,8 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	// Store user information (in memory for simplicity)
 	// users[loginDetail.Username] = signUpDetail.Password
 	if signUpDetail.Password != signUpDetail.Confirm_Password {
-
+		fmt.Println("Error: Password do not match!")
+		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(signUpDetail.Password), bcrypt.DefaultCost)
@@ -58,11 +54,16 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	database := db.GetDB()
 	defer database.Close()
 
-	test, err := userInsertion.Exec(database)
+	res, err := userInsertion.Exec(database)
 
 	fmt.Println(err)
-	fmt.Println(test)
+	fmt.Println(res)
 
+	if err == nil {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "Resgistration for user %s failed!", signUpDetail.Username)
+		return
+	}
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "User %s registered successfully", signUpDetail.Username)
 }

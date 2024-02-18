@@ -2,19 +2,18 @@ package signin
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"pos-be/.gen/YAPOS/public/model"
+	. "pos-be/.gen/YAPOS/public/table"
+	db "pos-be/database"
 	authentication "pos-be/lib"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"golang.org/x/crypto/bcrypt"
+
+	. "github.com/go-jet/jet/v2/postgres"
+
+	_ "github.com/lib/pq"
 )
-
-// Define a map to store users (in memory for simplicity)
-var users = map[string]string{
-	"user1": "password1",
-	"user2": "password2",
-}
 
 // Define a secret key for signing JWT tokens
 var jwtKey = []byte("your-secret-key")
@@ -24,28 +23,35 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	var signInDetail authentication.SignInDetail
 	json.NewDecoder(r.Body).Decode(&signInDetail)
 
-	// Validate user credentials
-	password, exists := users[signInDetail.Username]
-
-	if !exists || password != signInDetail.Password {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "Invalid username or password")
+	err := db.InitDB()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "3000: Please try again!"})
 		return
 	}
 
-	// Create JWT token
-	expirationTime := time.Now().Add(5 * time.Minute)
-	claims := &authentication.Claims{
-		Username: signInDetail.Username,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
+	statement := SELECT(User.AllColumns).FROM(User).WHERE(User.Username.EQ(String(signInDetail.Username)))
+	database := db.GetDB()
+
+	var res model.User
+	err = statement.Query(database, &res)
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Incorrect username or password!"})
+		return
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtKey)
+
+	err = bcrypt.CompareHashAndPassword([]byte(res.PasswordHash), []byte(signInDetail.Password))
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Incorrect username or password!"})
+		return
+	}
+	// Create JWT token
+	tokenString, err := authentication.NewJWTToken(res)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error generating token")
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unable to generate token!"})
 		return
 	}
 

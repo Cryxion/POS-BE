@@ -11,5 +11,6 @@ package table
 // this method only once at the beginning of the program.
 func UseSchema(schema string) {
 	Inventory = Inventory.FromSchema(schema)
+	Shop = Shop.FromSchema(schema)
 	User = User.FromSchema(schema)
 }
