@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// TODO : Get shops based on user
 func Get(w http.ResponseWriter, r *http.Request) {
 
 	var shopDetail model.Shop
