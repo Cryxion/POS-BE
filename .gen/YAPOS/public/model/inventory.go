@@ -13,16 +13,16 @@ import (
 
 type Inventory struct {
 	ItemID          int32 `sql:"primary_key"`
-	ShopID          *int32
-	ItemName        *string
-	ItemDescription *string
-	Quantity        *int32
-	MinimumQuantity *int32
-	IsCount         *bool
-	IsObsolete      *bool
-	CreatedAt       *time.Time
-	UpdatedAt       *time.Time
-	ActualPrice     *string
-	DiscountedPrice *string
-	CostPrice       *string
+	ShopID          int32
+	ItemName        string
+	ItemDescription string
+	Quantity        int32
+	MinimumQuantity int32
+	IsCount         bool
+	IsObsolete      bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	ActualPrice     string
+	DiscountedPrice string
+	CostPrice       string
 }

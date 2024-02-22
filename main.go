@@ -8,7 +8,8 @@ import (
 	"pos-be/api/signin"
 	"pos-be/api/signup"
 
-	authentication "pos-be/lib"
+	"pos-be/lib/authentication"
+	"pos-be/lib/result"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -35,6 +36,7 @@ func main() {
 
 func JwtVerify(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		// Your JWT verification logic here
 		// For simplicity, let's assume it's just printing for demonstration
 
@@ -43,14 +45,14 @@ func JwtVerify(next http.Handler) http.Handler {
 
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "Invalid token")
+			w.Write(result.Json_return(false, "Invalid token!", nil))
 			return
 		}
 
 		// Check if token is valid
 		if token == nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "Invalid token")
+			w.Write(result.Json_return(false, "Invalid token!", nil))
 			return
 		}
 
