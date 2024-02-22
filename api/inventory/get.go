@@ -2,13 +2,12 @@ package inventory
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"pos-be/.gen/YAPOS/public/model"
-	"pos-be/.gen/YAPOS/public/table"
+	. "pos-be/.gen/YAPOS/public/table"
 	db "pos-be/database"
-	authentication "pos-be/lib"
-	"time"
+
+	. "github.com/go-jet/jet/v2/postgres"
 )
 
 // TODO : Get inventories based on shop
@@ -24,30 +23,28 @@ func Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claim, err := authentication.ParseJWTToken(r)
-
-	newShop := model.Shop{
-		UserID:          int32(claim.UserId),
-		ShopName:        shopDetail.ShopName,
-		ShopDescription: shopDetail.ShopDescription,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
-	}
-
-	userInsertion := table.Shop.INSERT(table.Shop.UserID, table.Shop.ShopName, table.Shop.ShopDescription, table.Shop.CreatedAt, table.Shop.UpdatedAt).MODEL(newShop)
+	userInsertion := Inventory.SELECT(Inventory.AllColumns).WHERE(Inventory.ShopID.EQ(Int32(shopDetail.ShopID)))
 
 	// Retrieve the database connection
 	database := db.GetDB()
 	defer database.Close()
 
-	_, err = userInsertion.Exec(database)
+	var dest []struct{ model.Inventory }
+
+	err = userInsertion.Query(database, &dest)
 
 	if err != nil {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "Creation for shop %s failed!", shopDetail.ShopName)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unable to retrieve item for shop!"})
 		return
+	} else {
+		jsonData, err := json.Marshal(dest)
+		if err != nil {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Unable to retrieve item for shop!"})
+		}
+		// Print the JSON data
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonData)
 	}
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "Shop %s successfully created", shopDetail.ShopName)
-
 }

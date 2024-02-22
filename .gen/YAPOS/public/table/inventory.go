@@ -17,8 +17,19 @@ type inventoryTable struct {
 	postgres.Table
 
 	// Columns
-	Item     postgres.ColumnString
-	Quantity postgres.ColumnInteger
+	ItemID          postgres.ColumnInteger
+	ShopID          postgres.ColumnInteger
+	ItemName        postgres.ColumnString
+	ItemDescription postgres.ColumnString
+	Quantity        postgres.ColumnInteger
+	MinimumQuantity postgres.ColumnInteger
+	IsCount         postgres.ColumnBool
+	IsObsolete      postgres.ColumnBool
+	CreatedAt       postgres.ColumnTimez
+	UpdatedAt       postgres.ColumnTimez
+	ActualPrice     postgres.ColumnString
+	DiscountedPrice postgres.ColumnString
+	CostPrice       postgres.ColumnString
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -59,18 +70,40 @@ func newInventoryTable(schemaName, tableName, alias string) *InventoryTable {
 
 func newInventoryTableImpl(schemaName, tableName, alias string) inventoryTable {
 	var (
-		ItemColumn     = postgres.StringColumn("item")
-		QuantityColumn = postgres.IntegerColumn("quantity")
-		allColumns     = postgres.ColumnList{ItemColumn, QuantityColumn}
-		mutableColumns = postgres.ColumnList{ItemColumn, QuantityColumn}
+		ItemIDColumn          = postgres.IntegerColumn("item_id")
+		ShopIDColumn          = postgres.IntegerColumn("shop_id")
+		ItemNameColumn        = postgres.StringColumn("item_name")
+		ItemDescriptionColumn = postgres.StringColumn("item_description")
+		QuantityColumn        = postgres.IntegerColumn("quantity")
+		MinimumQuantityColumn = postgres.IntegerColumn("minimum_quantity")
+		IsCountColumn         = postgres.BoolColumn("isCount")
+		IsObsoleteColumn      = postgres.BoolColumn("isObsolete")
+		CreatedAtColumn       = postgres.TimezColumn("created_at")
+		UpdatedAtColumn       = postgres.TimezColumn("updated_at")
+		ActualPriceColumn     = postgres.StringColumn("actual_price")
+		DiscountedPriceColumn = postgres.StringColumn("discounted_price")
+		CostPriceColumn       = postgres.StringColumn("cost_price")
+		allColumns            = postgres.ColumnList{ItemIDColumn, ShopIDColumn, ItemNameColumn, ItemDescriptionColumn, QuantityColumn, MinimumQuantityColumn, IsCountColumn, IsObsoleteColumn, CreatedAtColumn, UpdatedAtColumn, ActualPriceColumn, DiscountedPriceColumn, CostPriceColumn}
+		mutableColumns        = postgres.ColumnList{ShopIDColumn, ItemNameColumn, ItemDescriptionColumn, QuantityColumn, MinimumQuantityColumn, IsCountColumn, IsObsoleteColumn, CreatedAtColumn, UpdatedAtColumn, ActualPriceColumn, DiscountedPriceColumn, CostPriceColumn}
 	)
 
 	return inventoryTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		Item:     ItemColumn,
-		Quantity: QuantityColumn,
+		ItemID:          ItemIDColumn,
+		ShopID:          ShopIDColumn,
+		ItemName:        ItemNameColumn,
+		ItemDescription: ItemDescriptionColumn,
+		Quantity:        QuantityColumn,
+		MinimumQuantity: MinimumQuantityColumn,
+		IsCount:         IsCountColumn,
+		IsObsolete:      IsObsoleteColumn,
+		CreatedAt:       CreatedAtColumn,
+		UpdatedAt:       UpdatedAtColumn,
+		ActualPrice:     ActualPriceColumn,
+		DiscountedPrice: DiscountedPriceColumn,
+		CostPrice:       CostPriceColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,
