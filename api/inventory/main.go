@@ -10,16 +10,17 @@ import (
 
 	"pos-be/lib/authentication"
 	"pos-be/lib/result"
+	"pos-be/lib/verify"
 
 	"github.com/go-jet/jet/v2/postgres"
 )
 
 func Create(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 	var inventoryDetail model.Inventory
 	json.NewDecoder(r.Body).Decode(&inventoryDetail)
 
+	//Verify DB connection is able to be establish before continuing further
 	err := db.InitDB()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -27,14 +28,22 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = authentication.ParseJWTToken(r)
-
+	//Verify user is truly login, though initial checking already done in the middleware
+	claim, err := authentication.ParseJWTToken(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write(result.Json_return(false, "Not authorized to perform this action", nil))
 		return
 	}
 
+	//Verify Shop belongs to this user, to ensure no ill intention or knowledgeable user.
+	if !verify.ShopOwnership(claim.UserId, inventoryDetail.ShopID) {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(result.Json_return(false, "Not authorized to perform this action", nil))
+		return
+	}
+
+	//New class for insertion
 	newInventory := model.Inventory{
 		ShopID:          inventoryDetail.ShopID,
 		ItemName:        inventoryDetail.ItemName,
@@ -50,15 +59,13 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:       time.Now(),
 	}
 
-	time.Now()
-
-	userInsertion := table.Inventory.INSERT(table.InventoryHistory.AllColumns).MODEL(newInventory)
+	inventoryInsertion := table.Inventory.INSERT(table.InventoryHistory.AllColumns).MODEL(newInventory)
 
 	// Retrieve the database connection
 	database := db.GetDB()
 	defer database.Close()
 
-	_, err = userInsertion.Exec(database)
+	_, err = inventoryInsertion.Exec(database)
 
 	if err != nil {
 		w.WriteHeader(http.StatusOK)
@@ -71,7 +78,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func Get(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 	var shopDetail model.Shop
 	json.NewDecoder(r.Body).Decode(&shopDetail)
